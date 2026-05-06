@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>碳迹 AI — 碳足迹计算 + 行为优化助手</title>
+<style>
+/* ============================================================
+   Design Tokens
+   ============================================================ */
+:root {
+  --p:#059669;--p2:#047857;--pl:#34d399;--pb:#ECFDF5;--pbg:#F0FDF4;
+  --o:#F59E0B;--ol:#FEF3C7;--r:#EF4444;--rl:#FEE2E2;
+  --b:#3B82F6;--bl:#DBEAFE;--violet:#8B5CF6;--vl:#EDE9FE;
+  --bg:#F8FAFC;--card:#FFF;--bd:#E2E8F0;
+  --tx:#0F172A;--tx2:#475569;--mu:#94A3B8;
+  --rad:16px;--sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh2:0 10px 25px -5px rgba(0,0,0,.08),0 8px 10px -6px rgba(0,0,0,.02);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased}
+input,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+
+/* ============================================================
+   Navigation (glassmorphism)
+   ============================================================ */
+nav{position:fixed;top:0;left:0;right:0;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);z-index:100;padding:0 24px}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;color:var(--p);text-decoration:none}
+.nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--p),var(--pl));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{text-decoration:none;color:var(--tx2);font-size:14px;font-weight:500;transition:.2s;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:var(--p);transition:.2s}
+.nav-links a:hover{color:var(--p)}.nav-links a:hover::after{width:100%}
+.nav-cta{background:var(--p)!important;color:#fff!important;padding:8px 20px;border-radius:999px;font-weight:600!important}
+.nav-cta:hover{background:var(--p2)!important}.nav-cta::after{display:none!important}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{padding:140px 24px 80px;background:linear-gradient(135deg,#ECFDF5 0%,#F0FDF4 50%,#EFF6FF 100%);text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 50%,rgba(5,150,105,.06) 0%,transparent 50%),radial-gradient(circle at 70% 50%,rgba(59,130,246,.06) 0%,transparent 50%);animation:hf 20s ease-in-out infinite}
+@keyframes hf{0%,100%{transform:translate(0,0)}50%{transform:translate(-2%,-2%)}}
+.hero-c{position:relative;max-width:800px;margin:0 auto}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--bd);padding:6px 16px;border-radius:999px;font-size:13px;color:var(--p);font-weight:600;margin-bottom:24px}
+.hero h1{font-size:clamp(36px,6vw,56px);font-weight:800;line-height:1.15;margin-bottom:20px;background:linear-gradient(135deg,var(--p2),var(--pl));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:clamp(15px,2.5vw,19px);color:var(--tx2);max-width:600px;margin:0 auto 36px;line-height:1.7}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:999px;font-size:16px;font-weight:600;text-decoration:none;transition:.2s;border:none;cursor:pointer}
+.btn-p{background:var(--p);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.35)}
+.btn-p:hover{background:var(--p2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(5,150,105,.4)}
+.btn-o{background:#fff;color:var(--tx);border:1.5px solid var(--bd)}
+.btn-o:hover{border-color:var(--p);color:var(--p);transform:translateY(-2px)}
+.btn-s{background:var(--bd);color:var(--tx2)}.btn-s:hover{background:#CBD5E1}
+.btn-d{background:var(--r);color:#fff;font-size:12px;padding:6px 16px}.btn-d:hover{background:#DC2626}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* Phone Mockup */
+.mockup-wrap{margin-top:60px;max-width:900px;margin-left:auto;margin-right:auto}
+.phone{background:var(--card);border-radius:40px;box-shadow:var(--sh2),0 20px 60px rgba(0,0,0,.1);padding:16px;max-width:340px;margin:0 auto}
+.screen{background:#F5F5F7;border-radius:28px;overflow:hidden;padding:20px 16px;min-height:480px}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mh .g{font-size:14px;font-weight:600;color:var(--tx2)}.mh .d{font-size:12px;color:var(--mu)}
+.mc{display:flex;gap:10px;margin-bottom:12px}
+.mk{flex:1;background:#fff;border-radius:10px;padding:10px 12px;border-left:3px solid var(--b)}
+.mk:last-child{border-left-color:var(--o)}
+.mk .l{font-size:10px;color:var(--mu);margin-bottom:2px}.mk .v{font-size:16px;font-weight:800}
+.mk .v.b{color:var(--b)}.mk .v.o{color:var(--o)}
+.mai{background:#fff;border:1.5px dashed var(--bd);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mu);margin-bottom:12px}
+.mtx{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB}.mtx:last-child{border:none}
+.mtx .ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.mtx .inf{flex:1}.mtx .n{font-size:12px;font-weight:600}.mtx .nt{font-size:10px;color:var(--mu)}
+.mtx .a{font-size:13px;font-weight:700;color:var(--b)}
+.mnav{display:flex;justify-content:space-around;padding:10px 0 4px;margin-top:8px;border-top:1px solid #E5E7EB}
+.mnav span{font-size:10px;color:var(--mu);text-align:center}.mnav .act{color:var(--p)}
+.mnav i{font-size:18px;display:block;margin-bottom:2px}
+
+/* ============================================================
+   Sections
+   ============================================================ */
+section{padding:80px 24px}
+.si{max-width:1100px;margin:0 auto}
+.sl{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--p);background:var(--pb);padding:4px 14px;border-radius:999px;margin-bottom:12px}
+.st2{font-size:clamp(28px,4vw,40px);font-weight:800;margin-bottom:16px;letter-spacing:-.5px}
+.sd{font-size:16px;color:var(--tx2);max-width:600px;line-height:1.7}
+
+/* Feature cards */
+#features{background:#fff}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:48px}
+.fc{background:var(--bg);border-radius:var(--rad);padding:28px;transition:.3s;border:1px solid transparent}
+.fc:hover{transform:translateY(-4px);border-color:var(--p);box-shadow:var(--sh2)}
+.fi{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.fc h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.fc p{font-size:14px;color:var(--tx2);line-height:1.7}
+.ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.ft span{font-size:12px;padding:2px 10px;border-radius:999px;font-weight:500}
+
+/* AI showcase */
+#ai-show{background:linear-gradient(135deg,var(--pb) 0%,#FFF 100%)}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;margin-top:48px}
+.ai-ex{display:flex;flex-direction:column;gap:16px}
+.ai-card{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:var(--sh);border-left:3px solid var(--p)}
+.ai-in{font-size:15px;margin-bottom:10px}.ai-in span{background:#FEF3C7;padding:1px 4px;border-radius:3px}
+.ai-out{display:flex;flex-wrap:wrap;gap:8px}
+.ai-chip{background:var(--pb);padding:4px 12px;border-radius:999px;font-size:13px;color:var(--p);display:flex;align-items:center;gap:4px}
+.ai-chip b{font-weight:700}
+.ai-vis{background:#fff;border-radius:var(--rad);padding:32px;box-shadow:var(--sh2)}
+.ai-vis-t{font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.ai-flow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.ai-step{text-align:center;padding:16px;background:var(--bg);border-radius:12px;min-width:100px}
+.ai-step .em{font-size:28px;margin-bottom:6px}.ai-step .lb{font-size:12px;font-weight:600}.ai-step .ds{font-size:10px;color:var(--mu);margin-top:2px}
+.ai-arr{font-size:20px;color:var(--mu)}
+
+/* Dark stats */
+#stats{background:linear-gradient(135deg,#0F172A,#1E293B);color:#fff}
+#stats .sl{background:rgba(255,255,255,.1);color:#A5B4FC}
+#stats .st2{color:#fff}#stats .sd{color:#94A3B8}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;margin-top:48px}
+.sc2{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--rad);padding:28px;text-align:center;backdrop-filter:blur(10px)}
+.sc2 .em{font-size:36px;margin-bottom:16px}.sc2 h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.sc2 p{font-size:14px;color:#94A3B8;line-height:1.7}
+.st-row{display:flex;justify-content:center;gap:48px;margin-top:60px;flex-wrap:wrap}
+.st-item{text-align:center}.st-num{font-size:36px;font-weight:800;color:var(--pl)}.st-lbl{font-size:14px;color:#94A3B8;margin-top:4px}
+
+/* CTA */
+#cta{text-align:center;background:linear-gradient(135deg,var(--p2),var(--p))}
+#cta h2{font-size:clamp(28px,4vw,40px);font-weight:800;color:#fff;margin-bottom:16px}
+#cta p{font-size:16px;color:rgba(255,255,255,.8);margin-bottom:36px}
+#cta .btn-p{background:#fff;color:var(--p);box-shadow:0 4px 14px rgba(0,0,0,.15)}
+#cta .btn-p:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+
+/* Footer */
+footer{background:#0F172A;padding:40px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
+footer p{font-size:13px;color:#64748B}
+
+/* ============================================================
+   App Area (hidden by default, shown on CTA click)
+   ============================================================ */
+#app-area{display:none}
+.app-wrap{max-width:800px;margin:0 auto;padding:80px 16px 60px}
+.tabs{display:flex;gap:6px;margin-bottom:20px;background:var(--card);border-radius:var(--rad);padding:4px;box-shadow:var(--sh)}
+.tab{flex:1;padding:10px 0;text-align:center;border:none;background:none;border-radius:12px;cursor:pointer;font-size:13px;font-weight:500;color:var(--mu);transition:.2s}
+.tab.on{background:var(--p);color:#fff;font-weight:600}
+.tab:hover:not(.on){background:var(--pb);color:var(--p)}
+.pg{display:none}.pg.on{display:block}
+
+.sec{background:var(--card);border-radius:var(--rad);padding:20px 24px;margin-bottom:14px;box-shadow:var(--sh)}
+.sec-t{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* Presets */
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.pre{padding:8px 14px;border:1.5px dashed var(--bd);border-radius:10px;cursor:pointer;font-size:12px;color:var(--tx2);background:#fff;transition:.2s}
+.pre:hover{border-color:var(--p);background:var(--pb);color:var(--p2)}
+
+/* Scenario grid — 4-column like reference */
+.gr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sc{border:1.5px solid var(--bd);border-radius:14px;padding:12px 10px;cursor:pointer;transition:.2s;position:relative;user-select:none;background:var(--card);text-align:center}
+.sc:hover{border-color:var(--p);transform:translateY(-2px);box-shadow:var(--sh)}
+.sc.on{border-color:var(--p);background:var(--pb)}
+.sc.on::after{content:"✓";position:absolute;top:6px;right:8px;color:var(--p);font-weight:700;font-size:13px;background:var(--pb);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center}
+.sc .ico-bg{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:6px}
+.sc .nm{font-weight:600;font-size:13px;margin-bottom:1px}.sc .ht{font-size:10px;color:var(--mu)}
+.sc.oth{border-style:dashed}.sc.oth.on{border-style:solid}
+.otag{font-size:11px;background:var(--pb);color:var(--p2);padding:4px 8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.otag .rm{cursor:pointer;color:var(--r);font-weight:700;margin-left:6px}
+
+/* Input */
+.si2{margin-top:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.si2 input[type=number]{width:70px;padding:5px 6px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;text-align:center;transition:.2s;-moz-appearance:textfield}
+.si2 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.si2 input[type=number]:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px rgba(5,150,105,.12)}
+.si2 input.warn{border-color:var(--r);background:var(--rl)}
+.si2 .u{font-size:12px;color:var(--mu)}.si2 .cv{font-size:11px;color:var(--p);font-weight:600;white-space:nowrap}
+.wm{font-size:10px;color:var(--r);margin-top:2px;display:none}.wm.show{display:block}
+
+/* Calc bar */
+.bar{display:flex;gap:10px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+
+/* Result boxes */
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.rb{border-radius:14px;padding:18px;text-align:center}
+.rb .l{font-size:12px;color:var(--mu);margin-bottom:2px}.rb .v{font-size:26px;font-weight:800}.rb .u{font-size:11px;color:var(--mu)}
+.rb.rbt{background:var(--bl)}.rbt .v{color:var(--b)}
+.rb.rbd{background:var(--ol)}.rbd .v{color:var(--o)}
+.rb.rbg{grid-column:1/-1;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}
+.rbg .l,.rbg .u{color:rgba(255,255,255,.8)}.rbg .v{color:#fff;font-size:32px}
+
+/* Grade */
+.gb{text-align:center;margin:12px 0;padding:24px;border-radius:var(--rad)}
+.gb .gl{font-size:13px;color:var(--mu);margin-bottom:4px}.gb .gv{font-size:52px;font-weight:800;line-height:1}
+.gb .gd{font-size:13px;margin-top:6px;line-height:1.6}
+.gb.gA{background:var(--pb)}.gb.gA .gv{color:var(--p)}
+.gb.gB{background:var(--bl)}.gb.gB .gv{color:var(--b)}
+.gb.gC{background:var(--ol)}.gb.gC .gv{color:var(--o)}
+.gb.gD{background:var(--rl)}.gb.gD .gv{color:var(--r)}
+
+/* Pie */
+.pie-row{display:flex;align-items:center;gap:20px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.pie-svg{width:120px;height:120px}.pie-lg{font-size:13px}
+.pie-lg div{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.pie-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* Circular progress ring */
+.ring-row{display:flex;align-items:center;gap:28px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.ring-svg{width:140px;height:140px}
+.ring-bg{fill:none;stroke:#E2E8F0;stroke-width:8}
+.ring-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .8s ease}
+.ring-label{text-anchor:middle;font-size:12px;fill:var(--mu)}
+.ring-val{text-anchor:middle;font-size:22px;font-weight:800;fill:var(--p)}
+.ring-sub{text-anchor:middle;font-size:10px;fill:var(--mu)}
+.ring-info{font-size:13px;line-height:1.8;color:var(--tx2)}
+.ring-info b{color:var(--p2);font-weight:700}
+
+/* Percentage bars */
+.pbar-row{margin:12px 0}
+.pbar-item{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pbar-label{font-size:12px;color:var(--tx2);width:60px;text-align:right}
+.pbar-track{flex:1;height:8px;background:var(--bd);border-radius:4px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.pbar-pct{font-size:12px;font-weight:600;width:36px}
+
+/* Equiv */
+.eq-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:12px 0}
+.eq{background:var(--bg);border-radius:12px;padding:14px;text-align:center}
+.eq .em{font-size:24px;margin-bottom:4px}.eq .en{font-size:20px;font-weight:700;color:var(--p2)}.eq .ed{font-size:11px;color:var(--mu);margin-top:2px}
+
+/* Offset */
+.ofs{background:linear-gradient(135deg,var(--pb),var(--bl));border-radius:var(--rad);padding:18px;text-align:center;margin:12px 0}
+.ofs .ov{font-size:28px;font-weight:700;color:var(--p2)}.ofs .od{font-size:12px;color:var(--tx2);margin-top:4px}
+
+/* Detail table */
+.dt{font-size:13px;margin-top:10px;overflow-x:auto}
+.dt table{width:100%;border-collapse:collapse}
+.dt th,.dt td{text-align:left;padding:8px;border-bottom:1px solid var(--bd)}
+.dt th{font-weight:600;color:var(--tx2);font-size:12px}.dt .pct{color:var(--mu);font-size:11px}
+
+/* Tips */
+.tips .tip{background:var(--ol);border-left:3px solid var(--o);padding:12px 16px;margin-bottom:8px;border-radius:0 12px 12px 0;font-size:13px;line-height:1.7}
+.tips .tip b{color:var(--o)}
+
+/* History */
+.hh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.htabs{display:flex;gap:4px}
+.ht{padding:6px 14px;border:1.5px solid var(--bd);border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:#fff;color:var(--tx2);transition:.2s}
+.ht.on{border-color:var(--p);background:var(--pb);color:var(--p2)}
+.chbar{display:flex;align-items:end;gap:4px;height:120px;margin:16px 0;padding:0 4px}
+.bw2{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.br2{width:100%;background:var(--p);border-radius:4px 4px 0 0;min-height:2px;transition:height .4s}
+.bl2{font-size:9px;color:var(--mu);white-space:nowrap}.bv2{font-size:9px;color:var(--tx2);font-weight:600}
+.sr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.scard{background:var(--bg);border-radius:12px;padding:14px;text-align:center}
+.scard .sv{font-size:20px;font-weight:700;color:var(--p2)}.scard .sl2{font-size:11px;color:var(--mu)}
+.hc{background:var(--bg);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.hc:hover{background:var(--pb)}.hc .hd{font-size:12px;color:var(--mu)}.hc .hv{font-weight:700;font-size:15px;color:var(--p2)}
+.hc .hv small{font-size:11px;color:var(--mu);font-weight:400}
+.hc .hdt{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:12px;color:var(--tx2)}
+.hc .hdt.show{display:block}
+.hempty{text-align:center;padding:40px;color:var(--mu);font-size:14px}
+
+/* About table */
+.about-tbl{font-size:13px}
+.about-tbl table{width:100%;border-collapse:collapse}
+.about-tbl th,.about-tbl td{text-align:left;padding:8px;border-bottom:1px solid var(--bd)}
+.about-tbl th{font-weight:600;color:var(--tx2);font-size:12px}
+
+/* Modal */
+.mb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+.mb.show{display:flex}
+.ml{background:#fff;border-radius:20px;padding:28px;width:440px;max-width:92vw;box-shadow:var(--sh2)}
+.ml h3{font-size:17px;margin-bottom:6px}.ml .mh2{font-size:12px;color:var(--mu);margin-bottom:12px}
+.ml textarea{width:100%;height:76px;padding:12px;border:1.5px solid var(--bd);border-radius:12px;font-size:14px;resize:vertical}
+.ml textarea:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px rgba(5,150,105,.12)}
+.ml .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.mex{padding:6px 12px;border:1.5px solid var(--bd);border-radius:999px;cursor:pointer;font-size:12px;color:var(--tx2);background:#fff;transition:.2s}
+.mex:hover{border-color:var(--p);background:var(--pb);color:var(--p)}
+
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .5s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;z-index:300;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Back btn */
+.back-bar{margin-bottom:16px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--bd);border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:var(--tx2);transition:.2s}
+.back-btn:hover{border-color:var(--p);color:var(--p)}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .ai-grid{grid-template-columns:1fr}.ai-arr{transform:rotate(90deg)}
+  .st2{font-size:24px}section{padding:60px 20px}
+  .hero{padding:100px 20px 60px}.fg{grid-template-columns:1fr}
+  .rg{grid-template-columns:1fr}.sr{grid-template-columns:1fr 1fr 1fr}
+  .eq-g{grid-template-columns:1fr 1fr}
+  .gr{grid-template-columns:repeat(2,1fr);gap:8px}
+  .st-row{gap:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     Navigation
+     ============================================================ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="showLanding();return false">
+      <span class="nav-logo-icon">🌱</span>碳迹 AI
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">产品功能</a></li>
+      <li><a href="#ai-show">AI 智能计算</a></li>
+      <li><a href="#stats">产品价值</a></li>
+      <li><a href="#" class="nav-cta" onclick="showApp();return false">立即体验 →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ============================================================
+     Landing Page
+     ============================================================ -->
+<div id="landing">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-c">
+      <div class="hero-badge">🌍 每一次选择，都在定义地球的温度</div>
+      <h1>量化你的碳排放<br>从出行与饮食开始</h1>
+      <p>步行还是开车？外卖还是自己做？看似微小的选择背后隐藏着碳排放差异。选择常用场景或描述自定义行为，即刻获得碳排数据与减排方案。</p>
+      <div class="hero-btns">
+        <a href="#" class="btn btn-p" onclick="showApp();return false">开始计算</a>
+        <a href="#features" class="btn btn-o">查看功能 ↓</a>
+      </div>
+
+      <!-- Phone mockup -->
+      <div class="mockup-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="mh">
+              <span class="g">今日碳排 🌿</span>
+              <span class="d">2026/05/06</span>
+            </div>
+            <div class="mc">
+              <div class="mk"><div class="l">出行碳排</div><div class="v b">2.35 kg</div></div>
+              <div class="mk"><div class="l">饮食碳排</div><div class="v o">3.82 kg</div></div>
+            </div>
+            <div class="mai">✏️ 输入场景描述（如：高铁200公里）<span style="margin-left:auto">→</span></div>
+            <div class="mtx">
+              <div class="ic" style="background:#DBEAFE;color:#3B82F6">🚗</div>
+              <div class="inf"><div class="n">私家车</div><div class="nt">10 km</div></div>
+              <div class="a">1.50 kg</div>
+            </div>
+            <div class="mtx">
+              <div class="ic" style="background:#FEF3C7;color:#F59E0B">🐖</div>
+              <div class="inf"><div class="n">猪肉</div><div class="nt">100 g</div></div>
+              <div class="a">1.48 kg</div>
+            </div>
+            <div class="mtx">
+              <div class="ic" style="background:#ECFDF5;color:#059669">🥦</div>
+              <div class="inf"><div class="n">蔬菜</div><div class="nt">500 g</div></div>
+              <div class="a">0.20 kg</div>
+            </div>
+            <div class="mnav">
+              <span class="act"><i>📊</i>计算</span>
+              <span><i>📅</i>记录</span>
+              <span><i>🌱</i>建议</span>
+              <span><i>📚</i>知识</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="si">
+      <div class="sl">✨ 功能一览</div>
+      <h2 class="st2">出行 × 饮食，两维碳排一站掌握</h2>
+      <p class="sd">内置 9 个高频生活场景的碳排系数，搭配 AI 自定义扩展，覆盖日常碳排放的主要来源。</p>
+      <div class="fg">
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#ECFDF5,#D1FAE5)">🚲</div>
+          <h3>场景即选即算</h3>
+          <p>步行、骑行、公交、私家车、地铁对应出行；猪肉、鸡肉、蔬菜、外卖对应饮食。选中场景后输入实际里程或用量，碳排数值同步更新。</p>
+          <div class="ft">
+            <span style="background:#ECFDF5;color:#059669">即选即算</span>
+            <span style="background:#DBEAFE;color:#3B82F6">数值可调</span>
+            <span style="background:#FEF3C7;color:#D97706">系数精准</span>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#EEF2FF,#E0E7FF)">🤖</div>
+          <h3>自定义场景由 AI 接手</h3>
+          <p>高铁出差、飞机旅行、每日牛肉 — 超出常用场景范围的行为，用自然语言描述即可，AI 自动匹配碳排系数完成计算并给出减排方案。</p>
+          <div class="ft">
+            <span style="background:#EEF2FF;color:#4F46E5">语言描述</span>
+            <span style="background:#ECFDF5;color:#059669">AI 计算</span>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#FEF2F2,#FEE2E2)">📊</div>
+          <h3>结果一目了然</h3>
+          <p>出行与饮食碳排分列展示，总量突出显示。饼图呈现两大类占比，明细表逐项列出碳排数值与百分比。</p>
+          <div class="ft">
+            <span style="background:#FEF2F2;color:#EF4444">占比饼图</span>
+            <span style="background:#ECFDF5;color:#059669">明细百分比</span>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE)">🔄</div>
+          <h3>碳排等价感知</h3>
+          <p>将碳排放量转化为更直观的参考：需要几棵树用一年吸收、相当于私家车跑多少公里、LED 灯亮多少小时。附带碳汇抵消成本估算。</p>
+          <div class="ft">
+            <span style="background:#F5F3FF;color:#7C3AED">直观等价</span>
+            <span style="background:#FEF3C7;color:#D97706">碳汇估算</span>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#FFF7ED,#FFEDD5)">📅</div>
+          <h3>碳排趋势追踪</h3>
+          <p>每次计算自动留存，支持按日、月、年查看碳排变化趋势。点击任一记录可展开查看当次出行与饮食的详细明细。</p>
+          <div class="ft">
+            <span style="background:#FFF7ED;color:#EA580C">日月年</span>
+            <span style="background:#DBEAFE;color:#3B82F6">展开明细</span>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fi" style="background:linear-gradient(135deg,#F0FDFA,#CCFBF1)">💡</div>
+          <h3>减排行动方案</h3>
+          <p>根据所选场景自动生成改进建议 — 不是泛泛而谈，而是针对你的具体行为给出替代方案与可减排量估算。</p>
+          <div class="ft">
+            <span style="background:#ECFDF5;color:#059669">场景适配</span>
+            <span style="background:#FEF3C7;color:#D97706">量化减排</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Showcase -->
+  <section id="ai-show">
+    <div class="si">
+      <div class="sl">🧠 超出常用范围？交给 AI</div>
+      <h2 class="st2">描述场景，AI 帮你算碳排</h2>
+      <p class="sd">高铁出差、飞机旅行、牛肉饮食… 用一句话描述你的行为，AI 匹配碳排系数完成计算，同时给出针对性的减排建议。</p>
+      <div class="ai-grid">
+        <div class="ai-ex">
+          <div class="ai-card">
+            <div class="ai-in">📝 输入：<span>高铁出行200公里</span></div>
+            <div class="ai-out">
+              <span class="ai-chip">🚄 高铁 <b>1.6 kg CO₂</b></span>
+              <span class="ai-chip" style="background:#FEF3C7;color:#D97706">💡 替代飞机减排 49 kg</span>
+            </div>
+          </div>
+          <div class="ai-card">
+            <div class="ai-in">📝 输入：<span>每日牛肉150g</span></div>
+            <div class="ai-out">
+              <span class="ai-chip">🥩 牛肉 <b>4.05 kg CO₂</b></span>
+              <span class="ai-chip" style="background:#FEF3C7;color:#D97706">💡 替代鸡肉减排 1.6 kg/天</span>
+            </div>
+          </div>
+          <div class="ai-card">
+            <div class="ai-in">📝 输入：<span>地铁10公里+每日羊肉100g</span></div>
+            <div class="ai-out">
+              <span class="ai-chip">🚇 地铁 <b>0.3 kg</b></span>
+              <span class="ai-chip">🐑 羊肉 <b>4.0 kg</b></span>
+              <span class="ai-chip" style="background:#FEF3C7;color:#D97706">💡 鸡肉替代减排 83%</span>
+            </div>
+          </div>
+        </div>
+        <div class="ai-vis">
+          <div class="ai-vis-t">⚙️ 工作原理</div>
+          <div class="ai-flow">
+            <div class="ai-step"><div class="em">📝</div><div class="lb">用户描述</div><div class="ds">"高铁200公里"</div></div>
+            <div class="ai-arr">→</div>
+            <div class="ai-step"><div class="em">🔍</div><div class="lb">场景识别</div><div class="ds">交通方式+里程</div></div>
+            <div class="ai-arr">→</div>
+            <div class="ai-step"><div class="em">🧮</div><div class="lb">系数匹配</div><div class="ds">IPCC 权威数据</div></div>
+            <div class="ai-arr">→</div>
+            <div class="ai-step"><div class="em">✅</div><div class="lb">碳排+建议</div><div class="ds">量化减排方案</div></div>
+          </div>
+          <div style="margin-top:24px;padding:16px;background:var(--pb);border-radius:12px;font-size:14px;color:var(--tx2);line-height:1.8">
+            <strong style="color:var(--p)">出行扩展：</strong> 高铁、飞机、出租车、摩托车、电动车、轮船<br>
+            <strong style="color:var(--p)">饮食扩展：</strong> 牛肉、羊肉、鱼/海鲜、鸡蛋、牛奶、奶茶、米饭、水果<br>
+            <strong style="color:var(--p)">数据来源：</strong> IPCC 排放因子、中国生态环境部公示数据
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dark Stats -->
+  <section id="stats">
+    <div class="si">
+      <div class="sl">🌍 产品价值</div>
+      <h2 class="st2">让每个人都能参与碳减排</h2>
+      <p class="sd">个人碳排放约占全球总量的 60-70%，从出行和饮食两个维度入手，每个人都可以为气候行动贡献力量。</p>
+      <div class="sg">
+        <div class="sc2"><div class="em">🚲</div><h3>精准计算</h3><p>基于 IPCC 权威碳排系数，出行/饮食 9 大常用场景精准计算，AI 覆盖更多自定义场景。</p></div>
+        <div class="sc2"><div class="em">💡</div><h3>行为优化</h3><p>不是简单报数字，而是基于你的实际行为生成可落地的减排建议，每条标注可减排量。</p></div>
+        <div class="sc2"><div class="em">📊</div><h3>数据追踪</h3><p>日/月/年多维度碳排趋势追踪，等价换算让抽象碳排变得具体可感。</p></div>
+      </div>
+      <div class="st-row">
+        <div class="st-item"><div class="st-num">9</div><div class="st-lbl">常用场景覆盖</div></div>
+        <div class="st-item"><div class="st-num">∞</div><div class="st-lbl">AI 自定义场景</div></div>
+        <div class="st-item"><div class="st-num">4</div><div class="st-lbl">等价换算维度</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="si">
+      <h2>准备好开始管理碳足迹了吗？</h2>
+      <p>无需注册，打开即用。点击选择场景或输入自定义场景，AI 帮你算碳排、给建议。</p>
+      <a href="#" class="btn btn-p" onclick="showApp();return false">🚀 立即开始计算</a>
+    </div>
+  </section>
+
+  <footer><p>碳迹 AI — 碳足迹计算 + 行为优化助手 · Demo · Built with ❤️</p></footer>
+</div>
+
+<!-- ============================================================
+     App Calculator Area
+     ============================================================ -->
+<div id="app-area">
+  <div class="app-wrap">
+    <div class="back-bar"><button class="back-btn" onclick="showLanding()">← 返回介绍页</button></div>
+
+    <div class="tabs">
+      <button class="tab on" onclick="swTab('calc',this)">碳足迹计算</button>
+      <button class="tab" onclick="swTab('hist',this)">排放记录</button>
+      <button class="tab" onclick="swTab('about',this)">碳知识</button>
+    </div>
+
+    <!-- === 计算页 === -->
+    <div class="pg on" id="pg-calc">
+      <div class="sec">
+        <div class="sec-t">⚡ 快捷场景预设</div>
+        <div class="presets">
+          <button class="pre" onclick="applyPreset('daily')">日常通勤日</button>
+          <button class="pre" onclick="applyPreset('wfh')">居家办公日</button>
+          <button class="pre" onclick="applyPreset('weekend')">周末出行日</button>
+          <button class="pre" onclick="applyPreset('heavy')">高碳排日</button>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">🚲 出行场景</div>
+        <div class="gr" id="g-travel"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">🍽️ 饮食场景</div>
+        <div class="gr" id="g-diet"></div>
+      </div>
+      <div class="bar">
+        <button class="btn btn-p" onclick="calculate()">计算碳足迹</button>
+        <button class="btn btn-s" onclick="resetAll()">重置</button>
+      </div>
+      <div id="result-box" style="display:none">
+        <div class="sec">
+          <div class="sec-t">📊 碳排放结果</div>
+          <!-- Ring + summary -->
+          <div class="ring-row" id="ring-row"></div>
+          <!-- Percentage bars -->
+          <div class="pbar-row" id="pbar-row"></div>
+          <!-- Summary cards -->
+          <div class="rg">
+            <div class="rb rbt"><div class="l">行程碳排</div><div class="v" id="r-t">0</div><div class="u">kg CO₂</div></div>
+            <div class="rb rbd"><div class="l">膳食碳排</div><div class="v" id="r-d">0</div><div class="u">kg CO₂</div></div>
+            <div class="rb rbg"><div class="l">今日总碳排放</div><div class="v" id="r-g">0</div><div class="u">kg CO₂</div></div>
+          </div>
+          <div class="dt" id="detail"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-t">🌱 碳抵消方案</div>
+          <div class="ofs" id="offset-box"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-t">🔄 碳排放等价换算</div>
+          <div class="eq-g" id="equiv"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-t">💡 低碳优化建议</div>
+          <div class="tips" id="tips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === 历史页 === -->
+    <div class="pg" id="pg-hist">
+      <div class="sec">
+        <div class="hh"><div class="sec-t" style="margin:0">📅 碳排放记录</div><button class="btn btn-d" onclick="clearHist()">清除记录</button></div>
+        <div class="htabs"><button class="ht on" onclick="swHist('day',this)">日</button><button class="ht" onclick="swHist('month',this)">月</button><button class="ht" onclick="swHist('year',this)">年</button></div>
+        <div id="hist-chart" class="chbar"></div>
+        <div class="sr" id="hist-stats"></div>
+        <div id="hist-list"></div>
+      </div>
+    </div>
+
+    <!-- === 知识页 === -->
+    <div class="pg" id="pg-about">
+      <div class="sec">
+        <div class="sec-t">📚 碳排放系数参考</div>
+        <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">本系统采用的碳排系数来源于 IPCC、中国生态环境部及权威研究数据。</p>
+        <div class="about-tbl"><table>
+          <tr><th>类别</th><th>场景</th><th>碳排系数</th><th>来源</th></tr>
+          <tr><td rowspan="5">出行</td><td>步行</td><td>0.005 kg/km</td><td>人体代谢间接排放</td></tr>
+          <tr><td>骑行</td><td>0.0033 kg/km</td><td>含车辆制造分摊</td></tr>
+          <tr><td>公交</td><td>0.03 kg/km</td><td>人均分摊排放</td></tr>
+          <tr><td>私家车</td><td>0.15 kg/km</td><td>汽油车均值</td></tr>
+          <tr><td>地铁</td><td>0.03 kg/km</td><td>电力驱动均值</td></tr>
+          <tr><td rowspan="4">饮食</td><td>猪肉</td><td>14.8 kg CO₂/kg</td><td>养殖全链排放</td></tr>
+          <tr><td>鸡肉</td><td>6.9 kg CO₂/kg</td><td>养殖全链排放</td></tr>
+          <tr><td>蔬菜</td><td>0.4 kg CO₂/kg</td><td>种植+运输</td></tr>
+          <tr><td>外卖</td><td>0.4 kg/次</td><td>包装+配送</td></tr>
+        </table></div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">🌍 碳排放等级说明</div>
+        <div class="about-tbl"><table>
+          <tr><th>等级</th><th>日碳排量</th><th>说明</th></tr>
+          <tr><td style="color:var(--p);font-weight:700">A (优秀)</td><td>&lt; 3 kg</td><td>低碳生活典范</td></tr>
+          <tr><td style="color:var(--b);font-weight:700">B (良好)</td><td>3 ~ 8 kg</td><td>低于全国平均</td></tr>
+          <tr><td style="color:var(--o);font-weight:700">C (一般)</td><td>8 ~ 15 kg</td><td>接近全国平均</td></tr>
+          <tr><td style="color:var(--r);font-weight:700">D (偏高)</td><td>&gt; 15 kg</td><td>建议多方面改善</td></tr>
+        </table></div>
+        <p style="font-size:12px;color:var(--mu);margin-top:10px">* 中国人均日碳排放约 7-10 kg（含工业分摊），个人直接排放约 3-8 kg/天</p>
+      </div>
+      <div class="sec">
+        <div class="sec-t">🤖 关于 AI 计算</div>
+        <p style="font-size:13px;color:var(--tx2);line-height:1.8">「其他」场景由大语言模型（LLM）完成碳排计算和建议生成。系统将场景描述发送给 LLM，模型参考 IPCC 等权威系数估算，同时生成个性化低碳建议。未配置后端时自动使用内置本地模拟计算。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="mb" id="modal">
+  <div class="ml">
+    <h3 id="m-title">输入自定义场景</h3>
+    <p class="mh2" id="m-hint"></p>
+    <div id="m-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <textarea id="m-input" placeholder="" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitO()}"></textarea>
+    <div class="btns">
+      <button class="btn btn-s" onclick="closeM()">取消</button>
+      <button class="btn btn-p" id="m-ok" onclick="submitO()">AI 计算</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   View switching
+   ============================================================ */
+function showApp(){document.getElementById('landing').style.display='none';document.getElementById('app-area').style.display='block';window.scrollTo(0,0)}
+function showLanding(){document.getElementById('landing').style.display='block';document.getElementById('app-area').style.display='none';window.scrollTo(0,0)}
+
+/* ============================================================
+   Data
+   ============================================================ */
+const TRAVEL=[
+  {id:'walk',nm:'步行',ico:'🚶',bg:'#E0F2FE',f:.005,u:'km',base:1,lo:0,hi:100,st:1,ht:'0.005 kg/km'},
+  {id:'bike',nm:'骑行',ico:'🚲',bg:'#D1FAE5',f:.0033,u:'km',base:3,lo:0,hi:100,st:1,ht:'0.0033 kg/km'},
+  {id:'bus',nm:'公交',ico:'🚌',bg:'#DBEAFE',f:.03,u:'km',base:5,lo:1,hi:300,st:1,ht:'0.03 kg/km'},
+  {id:'car',nm:'私家车',ico:'🚗',bg:'#FEF3C7',f:.15,u:'km',base:10,lo:1,hi:800,st:1,ht:'0.15 kg/km'},
+  {id:'subway',nm:'地铁',ico:'🚇',bg:'#E0E7FF',f:.03,u:'km',base:8,lo:1,hi:300,st:1,ht:'0.03 kg/km'},
+  {id:'otr',nm:'其他',ico:'✏️',isO:true},
+];
+const DIET=[
+  {id:'pork',nm:'猪肉',ico:'🐖',bg:'#FEE2E2',f:.0148,u:'g',base:100,lo:10,hi:2000,st:10,ht:'14.8 kg CO₂/kg'},
+  {id:'chicken',nm:'鸡肉',ico:'🍗',bg:'#FFEDD5',f:.0069,u:'g',base:100,lo:10,hi:2000,st:10,ht:'6.9 kg CO₂/kg'},
+  {id:'veg',nm:'蔬菜',ico:'🥦',bg:'#D1FAE5',f:.0004,u:'g',base:500,lo:50,hi:3000,st:50,ht:'0.4 kg CO₂/kg'},
+  {id:'takeout',nm:'外卖',ico:'🥡',bg:'#FEF3C7',f:.4,u:'次/周',base:3,lo:0,hi:21,st:1,ht:'0.4 kg/次'},
+  {id:'od',nm:'其他',ico:'✏️',isO:true},
+];
+
+const PRESETS={
+  daily:{travel:{walk:{on:true,v:1},bus:{on:true,v:10},subway:{on:true,v:15}},diet:{pork:{on:true,v:100},veg:{on:true,v:400},takeout:{on:true,v:1}}},
+  wfh:{travel:{walk:{on:true,v:.5}},diet:{veg:{on:true,v:500},chicken:{on:true,v:100},takeout:{on:true,v:2}}},
+  weekend:{travel:{car:{on:true,v:30},subway:{on:true,v:20},walk:{on:true,v:2}},diet:{pork:{on:true,v:150},veg:{on:true,v:300},takeout:{on:true,v:2}}},
+  heavy:{travel:{car:{on:true,v:50}},diet:{pork:{on:true,v:200},takeout:{on:true,v:5},chicken:{on:true,v:150}}},
+};
+
+const S={travel:{},diet:{},oT:[],oD:[],mT:null};
+const SK='cf_records';
+
+/* ============================================================
+   Presets
+   ============================================================ */
+function applyPreset(k){
+  const p=PRESETS[k];if(!p)return;
+  S.travel={};S.diet={};S.oT=[];S.oD=[];
+  Object.entries(p.travel).forEach(([id,v])=>{S.travel[id]={...v}});
+  Object.entries(p.diet).forEach(([id,v])=>{S.diet[id]={...v}});
+  rrAll();document.getElementById('result-box').style.display='none';toast('已加载预设场景');
+}
+
+/* ============================================================
+   Render cards
+   ============================================================ */
+function render(id,items,cat){
+  const el=document.getElementById(id);el.innerHTML='';
+  items.forEach(it=>{
+    const d=document.createElement('div');
+    d.className='sc'+(it.isO?' oth':'');d.id='sc-'+it.id;
+    const s=S[cat][it.id]||(it.isO?null:{on:false,v:it.base});
+    if(s&&s.on)d.classList.add('on');
+    if(it.isO){
+      d.innerHTML=`<div class="ico-bg" style="background:#F1F5F9">✏️</div><div class="nm">${it.nm}</div><div class="ht">点击输入场景</div><div id="ot-${cat}"></div>`;
+      d.onclick=()=>openM(cat);
+    }else{
+      const cv=s&&s.on?c1(it,s.v):0;
+      d.innerHTML=`<div class="ico-bg" style="background:${it.bg||'#F1F5F9'}">${it.ico}</div>
+        <div class="nm">${it.nm}</div><div class="ht">${it.ht}</div>
+        <div class="si2"><input type="number" min="${it.lo}" max="${it.hi}" step="${it.st}" value="${s?s.v:it.base}"
+          onclick="event.stopPropagation()" onfocus="event.stopPropagation()"
+          oninput="onV('${cat}','${it.id}',this)" id="inp-${it.id}">
+          <span class="u">${it.u}</span><span class="cv" id="cv-${it.id}">${cv} kg</span></div>
+        <div class="wm" id="w-${it.id}"></div>`;
+      d.onclick=()=>tog(cat,it.id,it);
+    }
+    el.appendChild(d);
+  });
+  refOth(cat);
+}
+function refOth(cat){
+  const b=document.getElementById('ot-'+cat);if(!b)return;
+  const a=cat==='travel'?S.oT:S.oD;
+  b.innerHTML=a.map((o,i)=>`<div class="otag"><span>${o.desc} ≈ <b>${o.carbon} kg</b></span><span class="rm" onclick="event.stopPropagation();rmO('${cat}',${i})">✕</span></div>`).join('');
+}
+function c1(it,v){return+(it.f*v).toFixed(4)}
+
+/* ============================================================
+   Card interaction
+   ============================================================ */
+function tog(cat,id,it){const s=S[cat][id]||{on:false,v:it.base};s.on=!s.on;S[cat][id]=s;rr(cat)}
+function onV(cat,id,inp){
+  const it=[...TRAVEL,...DIET].find(x=>x.id===id);let v=parseFloat(inp.value);
+  const w=document.getElementById('w-'+id);
+  if(isNaN(v)||v<0){inp.classList.add('warn');w.textContent='请输入有效正数';w.classList.add('show');return}
+  if(v>it.hi){inp.classList.add('warn');w.textContent=`最大不超过 ${it.hi} ${it.u}`;w.classList.add('show');return}
+  inp.classList.remove('warn');w.classList.remove('show');
+  if(!S[cat][id])S[cat][id]={on:true,v};S[cat][id].v=v;S[cat][id].on=true;
+  document.getElementById('sc-'+id).classList.add('on');
+  document.getElementById('cv-'+id).textContent=c1(it,v)+' kg';
+}
+function rr(c){c==='travel'?render('g-travel',TRAVEL,'travel'):render('g-diet',DIET,'diet')}
+function rrAll(){rr('travel');rr('diet')}
+
+/* ============================================================
+   Modal + LLM
+   ============================================================ */
+function openM(t){S.mT=t;const iT=t==='travel';
+  document.getElementById('m-title').textContent=iT?'输入自定义出行场景':'输入自定义饮食场景';
+  document.getElementById('m-hint').textContent=iT?'描述出行方式与里程，AI 自动计算碳排':'描述饮食内容与用量，AI 自动计算碳排';
+  document.getElementById('m-input').value='';document.getElementById('m-input').placeholder=iT?'高铁出行200公里':'每日牛肉150g';
+
+  // Example buttons
+  const ex=iT
+    ?['高铁出行200公里','飞机800公里','出租车15公里','电动车通勤10公里']
+    :['每日牛肉150g','每周奶茶5杯','每日鸡蛋2个','海鲜大餐300g'];
+  document.getElementById('m-examples').innerHTML=ex.map(e=>
+    `<button class="mex" onclick="document.getElementById('m-input').value='${e}'">${e}</button>`
+  ).join('');
+
+  document.getElementById('modal').classList.add('show');setTimeout(()=>document.getElementById('m-input').focus(),100);
+}
+function closeM(){document.getElementById('modal').classList.remove('show')}
+async function submitO(){
+  const d=document.getElementById('m-input').value.trim();if(!d){toast('请输入场景描述');return}
+  const b=document.getElementById('m-ok');b.disabled=true;b.innerHTML='<span class="spin"></span>AI 计算中…';
+  try{const r=await llm(d,S.mT);const a=S.mT==='travel'?S.oT:S.oD;a.push({desc:d,carbon:r.carbon,advice:r.advice||''});
+    closeM();rr(S.mT);toast('已添加：'+d+' → '+r.carbon+' kg CO₂');
+  }catch(e){toast('计算失败：'+e.message)}finally{b.disabled=false;b.textContent='AI 计算'}
+}
+function rmO(c,i){(c==='travel'?S.oT:S.oD).splice(i,1);rr(c)}
+
+async function llm(desc,cat){try{const r=await fetch('/api/calc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({desc,category:cat})});
+  if(r.ok){const d=await r.json();return{carbon:d.carbon,advice:d.advice||''}}}catch(_){}return{carbon:mock(desc,cat),advice:''}}
+function mock(desc,cat){const t=desc.toLowerCase(),ns=t.match(/[\d.]+/g)?.map(Number)||[],v=ns[0]||10;
+  if(cat==='travel'){if(t.includes('高铁')||t.includes('动车'))return+(v*.008).toFixed(2);if(t.includes('飞机'))return+(v*.255).toFixed(2);
+    if(t.includes('摩托'))return+(v*.1).toFixed(2);if(t.includes('电动'))return+(v*.015).toFixed(2);
+    if(t.includes('出租')||t.includes('打车')||t.includes('滴滴'))return+(v*.2).toFixed(2);if(t.includes('船'))return+(v*.12).toFixed(2);return+(v*.15).toFixed(2)}
+  else{if(t.includes('牛肉')||t.includes('牛排'))return+(v*.027).toFixed(2);if(t.includes('羊肉'))return+(v*.04).toFixed(2);
+    if(t.includes('鱼')||t.includes('海鲜'))return+(v*.007).toFixed(2);if(t.includes('鸡蛋')||t.includes('蛋'))return+(v*.005).toFixed(2);
+    if(t.includes('牛奶')||t.includes('奶'))return+(v*.003).toFixed(2);if(t.includes('奶茶')||t.includes('饮料'))return+(v*.05).toFixed(2);
+    if(t.includes('米饭')||t.includes('面'))return+(v*.002).toFixed(2);if(t.includes('水果'))return+(v*.003).toFixed(2);return+(v*.01).toFixed(2)}}
+
+/* ============================================================
+   Main calculate
+   ============================================================ */
+function calculate(){
+  let tS=0,dS=0;const items=[];
+  TRAVEL.forEach(it=>{if(it.isO)return;const s=S.travel[it.id];if(s&&s.on){const c=c1(it,s.v);tS+=c;items.push({cat:'出行',nm:it.nm,val:s.v+' '+it.u,c})}});
+  S.oT.forEach(o=>{tS+=o.carbon;items.push({cat:'出行',nm:o.desc,val:'-',c:o.carbon})});
+  DIET.forEach(it=>{if(it.isO)return;const s=S.diet[it.id];if(s&&s.on){const c=c1(it,s.v);dS+=c;items.push({cat:'饮食',nm:it.nm,val:s.v+' '+it.u,c})}});
+  S.oD.forEach(o=>{dS+=o.carbon;items.push({cat:'饮食',nm:o.desc,val:'-',c:o.carbon})});
+  if(!items.length){toast('请先选择至少一个场景');return}
+  const tot=+(tS+dS).toFixed(4);tS=+tS.toFixed(4);dS=+dS.toFixed(4);
+  document.getElementById('r-t').textContent=tS;document.getElementById('r-d').textContent=dS;document.getElementById('r-g').textContent=tot;
+  renderRing(tot);renderPBars(tS,dS);renderDetail(items,tot);renderEquiv(tot);renderOffset(tot);
+  document.getElementById('tips').innerHTML=genTips(items,tS,dS).map(t=>`<div class="tip"><b>建议：</b>${t}</div>`).join('');
+  saveRec(tot,tS,dS,items);
+  document.getElementById('result-box').style.display='block';document.getElementById('result-box').scrollIntoView({behavior:'smooth'});
+}
+
+/* Circular ring — tree absorption rate */
+function renderRing(total){
+  const bx=document.getElementById('ring-row');
+  const treeCap=21; // kg CO₂ per tree per year
+  const pct=Math.min(total/treeCap*100,100);
+  const r=56,circ=2*Math.PI*r;
+  const offset=circ*(1-pct/100);
+  const color=pct<30?'#059669':pct<60?'#3B82F6':pct<80?'#F59E0B':'#EF4444';
+  const pctLabel=pct>=100?'>100':pct.toFixed(0);
+
+  bx.innerHTML=`
+    <svg viewBox="0 0 140 140" class="ring-svg">
+      <circle cx="70" cy="70" r="${r}" class="ring-bg"/>
+      <circle cx="70" cy="70" r="${r}" class="ring-fg" stroke="${color}"
+        stroke-dasharray="${circ}" stroke-dashoffset="${circ}"
+        transform="rotate(-90 70 70)" id="ring-anim"/>
+      <text x="70" y="62" class="ring-val">${pctLabel}%</text>
+      <text x="70" y="78" class="ring-label">树木吸收率</text>
+      <text x="70" y="92" class="ring-sub">一棵树年吸碳21kg</text>
+    </svg>
+    <div class="ring-info">
+      <div>行程碳排 <b>${document.getElementById('r-t').textContent} kg</b></div>
+      <div>膳食碳排 <b>${document.getElementById('r-d').textContent} kg</b></div>
+      <div style="margin-top:6px;color:var(--mu);font-size:12px">减少一次私家车出行 ≈ 种下一棵树的 1/3 效果</div>
+    </div>`;
+
+  // Animate ring
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('ring-anim');
+    if(el) el.style.strokeDashoffset=offset;
+  });
+}
+
+/* Percentage bars */
+function renderPBars(tS,dS){
+  const bx=document.getElementById('pbar-row');
+  const tot=tS+dS||1;
+  const tPct=(tS/tot*100).toFixed(0);
+  const dPct=(dS/tot*100).toFixed(0);
+  bx.innerHTML=`
+    <div class="pbar-item">
+      <div class="pbar-label">行程碳排</div>
+      <div class="pbar-track"><div class="pbar-fill" style="width:${tPct}%;background:#3B82F6"></div></div>
+      <div class="pbar-pct" style="color:#3B82F6">${tPct}%</div>
+    </div>
+    <div class="pbar-item">
+      <div class="pbar-label">膳食碳排</div>
+      <div class="pbar-track"><div class="pbar-fill" style="width:${dPct}%;background:#F59E0B"></div></div>
+      <div class="pbar-pct" style="color:#F59E0B">${dPct}%</div>
+    </div>`;
+}
+
+function renderDetail(items,tot){let h='<table><tr><th>类别</th><th>场景</th><th>用量</th><th>碳排</th><th>占比</th></tr>';
+  items.forEach(i=>{h+=`<tr><td>${i.cat}</td><td>${i.nm}</td><td>${i.val}</td><td>${i.c} kg</td><td class="pct">${tot>0?(i.c/tot*100).toFixed(1):0}%</td></tr>`});
+  h+='</table>';document.getElementById('detail').innerHTML=h}
+
+function renderEquiv(t){document.getElementById('equiv').innerHTML=`
+  <div class="eq"><div class="em">🌳</div><div class="en">${(t/21*365).toFixed(1)}</div><div class="ed">棵树 · 年吸收量</div></div>
+  <div class="eq"><div class="em">🚗</div><div class="en">${(t/.15).toFixed(0)} km</div><div class="ed">私家车等价行驶</div></div>
+  <div class="eq"><div class="em">💡</div><div class="en">${(t/.06).toFixed(0)} h</div><div class="ed">LED灯泡点亮时长</div></div>
+  <div class="eq"><div class="em">🥩</div><div class="en">${(t/27*1000).toFixed(0)} g</div><div class="ed">等价牛肉碳排</div></div>`}
+
+function renderOffset(t){document.getElementById('offset-box').innerHTML=`
+  <div style="font-size:13px;color:var(--mu);margin-bottom:6px">抵消今日碳排放，您可以：</div>
+  <div class="ov">种 ${Math.ceil(t/21)} 棵树</div>
+  <div class="od">或购买碳信用约 ¥${(t*.05).toFixed(2)}（按碳汇价 ¥50/吨计算）</div>`}
+
+function genTips(items,tS,dS){const t=[];
+  items.forEach(i=>{if(i.nm==='私家车'&&i.c>.5)t.push(`私家车碳排 ${i.c} kg，改乘公交可减排约 ${(i.c*.6).toFixed(2)} kg（-60%）。`);
+    if(i.nm==='猪肉'&&i.c>.5)t.push(`猪肉碳排 ${i.c} kg，等量替换为鸡肉可减排约 ${(i.c*.53).toFixed(3)} kg（-53%）。`);
+    if(i.nm==='外卖'&&i.c>.8)t.push(`外卖每周 ${S.diet.takeout?.v||3} 次，自带餐具每次可减排约 0.05 kg。`);
+    if(i.c>3&&i.cat==='出行')t.push(`${i.nm}碳排 ${i.c} kg，改乘地铁/公交可减排 50%+。`)});
+  if(tS>2&&!t.some(x=>x.includes('步行')))t.push('短途尝试步行或骑行，3km以内零碳出行！');
+  if(dS>1.5&&!t.some(x=>x.includes('鸡肉')))t.push('增加蔬菜和豆制品比例，减少红肉是最有效的饮食减碳方式。');
+  [...S.oT,...S.oD].forEach(o=>{if(o.advice)t.push(o.advice)});
+  if(!t.length)t.push('碳排放水平较低，继续保持低碳出行和均衡饮食！');
+  return t.slice(0,4)}
+
+/* ============================================================
+   History
+   ============================================================ */
+function loadR(){try{return JSON.parse(localStorage.getItem(SK))||[]}catch{return[]}}
+function saveR(r){localStorage.setItem(SK,JSON.stringify(r))}
+function saveRec(total,travel,diet,items){const r=loadR();r.push({ts:Date.now(),date:new Date().toLocaleDateString('zh-CN'),
+  total:+total.toFixed(4),travel:+travel.toFixed(4),diet:+diet.toFixed(4),items:items.map(i=>({c:i.cat,n:i.nm,v:i.val,co:i.c}))});
+  if(r.length>365)r.splice(0,r.length-365);saveR(r)}
+function clearHist(){if(!confirm('确定清除所有记录？'))return;localStorage.removeItem(SK);renderHist('day');toast('已清除')}
+
+let hM='day';
+function swHist(m,el){hM=m;document.querySelectorAll('.ht').forEach(b=>b.classList.remove('on'));if(el)el.classList.add('on');renderHist(m)}
+function renderHist(mode){
+  const recs=loadR(),ch=document.getElementById('hist-chart'),st=document.getElementById('hist-stats'),ls=document.getElementById('hist-list');
+  if(!recs.length){ch.innerHTML='';st.innerHTML='';ls.innerHTML='<div class="hempty">暂无记录，完成一次碳足迹计算后将自动记录</div>';return}
+  const g={};recs.forEach(r=>{let k;const d=new Date(r.ts);
+    if(mode==='day')k=r.date;else if(mode==='month')k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');else k=String(d.getFullYear());
+    if(!g[k])g[k]={total:0,travel:0,diet:0,count:0,items:[]};g[k].total+=r.total;g[k].travel+=r.travel;g[k].diet+=r.diet;g[k].count++;g[k].items.push(r)});
+  const keys=Object.keys(g).sort(),last=keys.slice(-14),maxV=Math.max(...last.map(k=>g[k].total),.01);
+  ch.innerHTML=last.map(k=>{const h=Math.round(g[k].total/maxV*100);
+    return`<div class="bw2"><div class="bv2">${g[k].total.toFixed(1)}</div><div class="br2" style="height:${Math.max(h,2)}%"></div><div class="bl2">${mode==='day'?k.slice(5):k}</div></div>`}).join('');
+  const allT=recs.reduce((s,r)=>s+r.total,0);
+  st.innerHTML=`<div class="scard"><div class="sv">${recs.length}</div><div class="sl2">总记录数</div></div>
+    <div class="scard"><div class="sv">${(allT/recs.length).toFixed(2)}</div><div class="sl2">平均 kg/次</div></div>
+    <div class="scard"><div class="sv">${Math.max(...recs.map(r=>r.total)).toFixed(1)}</div><div class="sl2">最高 kg</div></div>`;
+  ls.innerHTML=last.reverse().map(k=>{const gn=g[k];const dHtml=gn.items.map(r=>(r.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:2px 0"><span>${i.c} ${i.n}</span><span>${i.co} kg</span></div>`).join('')).join('');
+    return`<div class="hc" onclick="this.querySelector('.hdt').classList.toggle('show')"><div class="hd">${k} · ${gn.count}次</div><div style="font-size:12px;color:var(--mu)">出行 ${gn.travel.toFixed(2)} kg · 饮食 ${gn.diet.toFixed(2)} kg</div><div class="hv">${gn.total.toFixed(2)} <small>kg CO₂</small></div><div class="hdt">${dHtml||'<span style="color:var(--mu)">无明细</span>'}</div></div>`}).join('')}
+
+/* ============================================================
+   Tabs & utils
+   ============================================================ */
+function swTab(tab,el){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');document.getElementById('pg-'+tab).classList.add('on');if(tab==='hist')renderHist(hM)}
+function resetAll(){S.travel={};S.diet={};S.oT=[];S.oD=[];document.getElementById('result-box').style.display='none';rrAll();toast('已重置')}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+
+rrAll();
+</script>
+</body>
+</html>
